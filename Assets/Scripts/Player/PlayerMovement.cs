@@ -18,22 +18,11 @@ public class PlayerMovement : MonoBehaviour
     private BoxCollider2D playerCollider;
     private float horizontalInput;
     [SerializeField]
-    private Transform attackPoint;
-    [SerializeField]
-    private float radius;
-    [SerializeField]
-    private LayerMask enemyLayer;
-    [SerializeField]
-    private float meleeDamage;
-    private float attackTimer;
-    [SerializeField]
-    private float attackCd;
-    [SerializeField]
     LayerMask wallLayer;
     [SerializeField]
     private float footOffset=0.7f;
-    [SerializeField]
-    private float reachOffset=0.6f;
+    //[SerializeField]
+    //private float reachOffset=0.6f;
     [SerializeField]
     private float grabDistance=0.1f;
     [SerializeField]
@@ -45,95 +34,141 @@ public class PlayerMovement : MonoBehaviour
     private float wallJumpForce;
     public bool canMove=true;
     [SerializeField]
-    private float enemyXPush;
-    [SerializeField]
-    private float enemyYPush;
-    [SerializeField]
     private float dashForce;
+    private AbilityManager abilityManager;
+    private Ladder ladderManager;
+    private bool onLadder;
+    [SerializeField]
+    private float ladderMoveSpeed;
+    [SerializeField]
+    private float fallSpeed;
+    private bool castingAbility;
+    private MeleeComboSystem meleeComboSystem;
+    [SerializeField]
+    private float wallSlideSpeed;
+    private bool jumping;
     private void Awake() {
         anim=GetComponent<Animator>();
         body=GetComponent<Rigidbody2D>();
         sr=GetComponent<SpriteRenderer>();
         playerCollider=GetComponent<BoxCollider2D>();
-        attackTimer=attackCd;
+        castingAbility=false;
+        meleeComboSystem=GetComponent<MeleeComboSystem>();
     }
     private void Update() {
+        if(!canMove) return;
         movePlayer();
         if(Input.GetKeyDown(KeyCode.Space)){
             jump();
         }
-        if(!onWall&&canMove)
+        wallSlide();
+        if(!onWall&&canMove){
             body.gravityScale=2;
-        if(Input.GetButtonDown("Fire1")&&onGround()&&attackTimer>=attackCd){
-            attack();
         }
-        else
-            attackTimer+=Time.deltaTime;
         if(Input.GetButtonDown("Fire3"))
             StartCoroutine(dash());
-        wallCheck();
-        anim.SetBool("Jump",!onGround());
-        
+        if(onLadder){
+            ladderMovement();
+        }
+        if(!castingAbility)
+            anim.SetBool("Jump",!onGround());
+        meleeComboSystem.canAttack=onGround();
+    }
+    private void Start(){
+        abilityManager = GameObject.Find("AbilityManager").GetComponent<AbilityManager>();
+        for (int i = 0; i < abilityManager.abilities.Length; i++){
+            Ability ability = abilityManager.abilities[i];
+            switch (ability){
+                case Strike strikeAbility:
+                    strikeAbility.AbilityActivated += OnStrikeActivated;
+                    break;
+                case OrbSkill orbAbility:
+                    orbAbility.AbilityActivated += OnOrbActivated;
+                    break;
+                default:
+                    break;
+            }
+        }
+        ladderManager=FindObjectOfType<Ladder>();
+        if(ladderManager)
+            ladderManager.onCollision+=activateLadder;
+    }
+    private void activateLadder(bool isOnLadder) {
+        if(isOnLadder){
+            onLadder=true;
+            body.velocity=Vector2.zero;
+        }
+        else
+            onLadder=false;
+    }
+    private void OnStrikeActivated(){
+        castingAbility=true;
+        anim.SetBool("Jump",false);
+        anim.SetTrigger("Strike");
+    }
+    private void OnOrbActivated(){
+        castingAbility=true;
+        anim.SetBool("Jump",false);
+        anim.SetTrigger("Cast");
     }
     private void movePlayer(){
-        if(!canMove) return;
         horizontalInput=Input.GetAxisRaw("Horizontal");
         if(horizontalInput>0.1f){
-            transform.localScale=new Vector3(-1,1,1);
+            transform.localScale=new Vector3(-1*Mathf.Abs(transform.localScale.x),1*Mathf.Abs(transform.localScale.x),1*Mathf.Abs(transform.localScale.x));
             onWall=false;
         }
         else if(horizontalInput<-0.1f){
-            transform.localScale=Vector3.one;
+            transform.localScale=new Vector3(1*Mathf.Abs(transform.localScale.x),1*Mathf.Abs(transform.localScale.x),1*Mathf.Abs(transform.localScale.x));
             onWall=false;
         }
         body.velocity=new Vector2(horizontalInput*speed,body.velocity.y);
         anim.SetBool("Walk",horizontalInput!=0);
     }
     private void jump(){
-        if(!onGround())
+        jumping=true;
+        if(!onGround()||onLadder)
             if(onWall){
                 body.AddForce(new Vector2(Mathf.Sign(transform.localScale.x)*pushBackForce,wallJumpForce));
+                transform.localScale=new Vector3(-transform.localScale.x,transform.localScale.y,transform.localScale.z);
                 onWall=false;
             }  
+            else if(onLadder){
+                body.AddForce(new Vector2(0f,wallJumpForce));
+            }
             else{
                 return;
             }  
         else
             body.velocity=new Vector2(body.velocity.x,jumpForce);  
+        Invoke("resetjump",0.2f);
     }
     private bool onGround(){
-        RaycastHit2D hit=Physics2D.BoxCast(playerCollider.bounds.center,playerCollider.bounds.size,0,Vector2.down,0.01f,groundLayer);
+        RaycastHit2D hit=Physics2D.BoxCast(playerCollider.bounds.center,playerCollider.bounds.size,0,Vector2.down,0.1f,groundLayer);
         return hit;
     }
-    private void attack(){
-        anim.SetTrigger("Attack");
-        attackTimer=0;
+    private bool isWalled() {
+        float direction=-playerTransform.localScale.x;
+        Vector3 footEyeOffSet=new Vector3(footOffset*direction,eyeHeight,0);
+        Vector2 grabDir = new Vector2(direction, 0f);
+        RaycastHit2D hit = Physics2D.Raycast(transform.position+footEyeOffSet, grabDir, grabDistance,wallLayer);
+        if(hit){
+            onWall=true;
+        }
+        return hit;
     }
-    public void damageEnemy() {
-        Collider2D[] enemies=Physics2D.OverlapCircleAll(attackPoint.position,radius,enemyLayer);
-        foreach(Collider2D enemy in enemies){
-            enemy.GetComponent<Health>().takeDamage(meleeDamage,-Mathf.Sign(transform.localScale.x),enemyXPush,enemyYPush);
+    private void wallSlide() {
+        if(isWalled()&&!onGround()&&horizontalInput==0){
+            body.velocity=new Vector2(body.velocity.x,Mathf.Clamp(body.velocity.y, -wallSlideSpeed,float.MaxValue));
         }
     }
-    private void OnDrawGizmosSelected() {
-        if(attackPoint==null) return;
-        Gizmos.DrawWireSphere(attackPoint.position,radius);
+    private void ladderMovement(){
+        if(jumping)return;
+        float verticalInput = Input.GetAxisRaw("Vertical");
+        if(verticalInput<=0&&onGround()){
+            return;
+        }
+        body.velocity=new Vector2(body.velocity.x,Mathf.Clamp(body.velocity.y, ladderMoveSpeed*verticalInput,float.MaxValue));
     }
-    private void wallCheck() {
-        float direction=-playerTransform.localScale.x;
-        float playerHeight=playerCollider.size.y;
-        Vector3 footEyeOffSet=new Vector3(footOffset*direction,eyeHeight,0);
-        Vector3 reachHeightOffSet=new Vector3(reachOffset*direction,playerHeight,0);
-        Vector2 grabDir = new Vector2(direction, 0f);
-		RaycastHit2D ledgeCheck = Physics2D.Raycast(transform.position+reachHeightOffSet, Vector2.down, grabDistance,wallLayer);
-		RaycastHit2D wallCheck = Physics2D.Raycast(transform.position+footEyeOffSet, grabDir, grabDistance,wallLayer); 
-        if (!onGround() && body.velocity.y < 0f && ledgeCheck && wallCheck){ 
-            body.velocity=Vector3.zero;
-            body.gravityScale=1;
-            onWall=true;
-		}
-    }
-
     IEnumerator dash(){
         body.velocity=Vector2.zero;
         Vector2 push=new Vector2(dashForce*-transform.localScale.x,0);
@@ -142,5 +177,24 @@ public class PlayerMovement : MonoBehaviour
         body.gravityScale=0.5f;
         yield return new WaitForSeconds(0.5f);
         canMove=true;
+    }
+    private void abilityReset() {
+        castingAbility=false;
+    }
+    private void resetjump () {
+        jumping=false;
+    }
+    public IEnumerator darkenPlayer(){
+        print("coro called");
+        sr.color=Color.gray;
+        canMove=false;
+        body.velocity=Vector2.zero;
+        anim.SetBool("Walk",false);
+        meleeComboSystem.canAttack=false;
+        yield return new WaitForSeconds(2f);
+        print("canmove true");
+        sr.color=Color.white;
+        canMove=true;
+        meleeComboSystem.canAttack=true;
     }
 }

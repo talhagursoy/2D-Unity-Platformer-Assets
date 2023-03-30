@@ -16,7 +16,14 @@ public class SpikeScript : MonoBehaviour
                 other.collider.GetComponent<Health>().takeDamage(damage,1,pushX,pushY);
             else
                 other.collider.GetComponent<Health>().takeDamage(damage,-1,pushX,pushY);
-            print("takingdamage");
+        }
+    }
+    private void OnTriggerEnter2D(Collider2D other) {
+        if(other.CompareTag("Player")){
+            if(other.transform.position.x>=transform.position.x)
+                other.GetComponent<Health>().takeDamage(damage,1,pushX,pushY);
+            else
+                other.GetComponent<Health>().takeDamage(damage,-1,pushX,pushY);
         }
     }
 }

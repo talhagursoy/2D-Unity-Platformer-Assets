@@ -54,10 +54,12 @@ public class SoldierEnemy : MonoBehaviour
     }
     private void Update(){
         if(playerInsight(rangedDistance)||chasePlayer)
-            if(playerInsight(meleeDistance))
+            if(playerInsight(meleeDistance)){
                 attackPlayer();
-            else
+            }
+            else{
                 moveToPlayer();
+            }
         else{
             patrol();
         }
@@ -93,16 +95,6 @@ public class SoldierEnemy : MonoBehaviour
             timePassed+=Time.deltaTime;
     }
     private void moveToPlayer() {
-        if(playerTransform.position.x>(rightEdge.transform.position.x+chaseDistance)||playerTransform.position.x<(leftEdge.transform.position.x-chaseDistance)){
-            chasePlayer=false;
-            changeDirection();
-            return;
-        }
-        else if(transform.position.x>(rightEdge.transform.position.x+chaseDistance)||transform.position.x<(leftEdge.transform.position.x-chaseDistance)){
-            chasePlayer=false;
-            changeDirection();
-            return;
-        }
         if(transform.position.x>playerTransform.position.x){
             transform.localScale=new Vector2(1,1);
             moveLeft=false;
@@ -120,6 +112,14 @@ public class SoldierEnemy : MonoBehaviour
         anim.SetBool("Run",true);
     }   
     private bool playerInsight(float distance){
+        if(playerTransform.position.x>(rightEdge.transform.position.x+meleeDistance+rangedDistance)||playerTransform.position.x<(leftEdge.transform.position.x-chaseDistance-meleeDistance)){
+            chasePlayer=false;
+            return false;
+        }
+        else if(transform.position.x>(rightEdge.transform.position.x+chaseDistance)||transform.position.x<(leftEdge.transform.position.x-chaseDistance)){
+            chasePlayer=false;
+            return false;
+        }
         Vector3 dir;
         if(Mathf.Sign(transform.localScale.x)<=0){
             dir=Vector3.right;
@@ -156,7 +156,8 @@ public class SoldierEnemy : MonoBehaviour
     }
     private void damagePlayer() {
         if(playerInsight(meleeDistance))
-            health.takeDamage(damage,-Mathf.Sign(transform.localScale.x),playerXPush,playerYPush);
+            if(health!=null)
+                health.takeDamage(damage,-Mathf.Sign(transform.localScale.x),playerXPush,playerYPush);
     }
     private int findArrow() {
         //can optimize this to go from the previous i so that it doesnt run from start all the time
@@ -166,21 +167,9 @@ public class SoldierEnemy : MonoBehaviour
         }
         return 0;
     }
-    /*string FindWeaponInChildren(Transform transform, string weaponName) {
-        if (transform.name == weaponName) {
-            return weaponName;
-        }
-        for (int i = 0; i < transform.childCount; i++) {
-            if (FindWeaponInChildren(transform.GetChild(i), weaponName)==weaponName) {
-                return weaponName;
-            }
-        }
-        return null;
-        this method is not needed now cause we dont actually need to know what weapon they hold
-    }*/
     private void shootArrow(){
         arrows[findArrow()].transform.position=firePoint.position;
-        arrows[findArrow()].GetComponent<ArrowScript>().activateArrow(-Mathf.Sign(transform.localScale.x));
+        //arrows[findArrow()].GetComponent<ArrowScript>().activateArrow(-Mathf.Sign(transform.localScale.x));
         attackTimer=0;
     }
 }

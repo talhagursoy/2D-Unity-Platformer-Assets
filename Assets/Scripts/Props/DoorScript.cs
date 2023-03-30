@@ -5,17 +5,55 @@ using UnityEngine;
 public class DoorScript : MonoBehaviour
 {
     private Animator anim;
-    private BoxCollider2D boxCollider2D;
-    void Start()
-    {
+    private CircleCollider2D circleCollider2D;
+    private SpriteRenderer sr;
+    [SerializeField]
+    private Sprite portal1;
+    [SerializeField]
+    private Sprite portal2;
+    [SerializeField]
+    private Sprite portal3;
+    [SerializeField]
+    private Sprite portal4;
+    private ChestScript chestScript;
+    private int count=1;
+    private void Awake() {
+        circleCollider2D=GetComponent<CircleCollider2D>();
+        sr=GetComponent<SpriteRenderer>();
         anim=GetComponent<Animator>();
-        GameManager.registerDoor(this);
-        boxCollider2D=GetComponent<BoxCollider2D>();
+        sr.sprite = portal1;
     }
-
+    void Start(){ 
+        GameManager.registerDoor(this);
+        ChestScript[] chestScripts = FindObjectsOfType<ChestScript>();
+        foreach(ChestScript chestScript in chestScripts){
+            chestScript.onChestOpen += portalOpen;
+        }
+    }
+    private void portalOpen(){
+        count++;
+        switch(count){   
+            case 2:
+                sr.sprite = portal2;
+                print("set to 2");
+                break;
+            case 3:
+                sr.sprite = portal3;
+                break;
+            case 4:
+                sr.sprite = portal4;
+                break;
+            default :
+                sr.sprite = portal1;
+                break;
+        }
+    }
     public void openDoor() {
-        anim.SetTrigger("Open");
-        boxCollider2D.isTrigger=true;
-        //update ui that door is open
+        circleCollider2D.isTrigger=true;
+    }
+    private void OnTriggerEnter2D(Collider2D other) {
+        if(other.CompareTag("Player")){
+            GameManager.loadScene();
+        }
     }
 }
