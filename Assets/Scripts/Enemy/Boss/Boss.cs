@@ -4,93 +4,49 @@ using UnityEngine;
 
 public class Boss : MonoBehaviour
 {
+	[SerializeField]
     private Transform player;
-	private bool isFlipped = false;
     [SerializeField]
     private LayerMask playerLayer;
     private float damage; //will rewamp later an change these;
-	private float teleportDistance=10f;
 	[SerializeField]
 	private Transform leftFirePoint;
 	[SerializeField]
 	private Transform rightFirePoint;
+	[SerializeField]
 	private GameObject[] orbs;
+	[SerializeField]
 	private GameObject[] gazes;
+	[SerializeField]
 	private GameObject[] portals;
-	private Health health;
+	private BossHealth health;
 	private Animator anim;
+	private float attackCd=0.2f;
+	[SerializeField]
+	private float orbRadius=2f;
+	[SerializeField]
+	private Transform tpPoint;
+	[SerializeField]
+	private GameObject[] spiritPortals;
+	[SerializeField]
+	private GameObject p2Spell;
 	private void Awake() {
-		health=GetComponent<Health>();
+		health=GetComponent<BossHealth>();
 		health.OnDamageTaken+=shieldHit;
-		player = GameObject.FindGameObjectWithTag("Player").transform;
 		anim=GetComponent<Animator>();
 	}
-	void Start() {
-		GameObject orbHolder = GameObject.Find("OrbHolder");
-		GravityOrb[] gravityOrbs = null;
-		if (orbHolder != null) {
-			gravityOrbs = orbHolder.GetComponentsInChildren<GravityOrb>(true);
-		}
-		GameObject gazeHolder = GameObject.Find("GazeHolder");
-		GazeScript[] gazeObjects = null;
-		if (gazeHolder != null) {
-			gazeObjects = gazeHolder.GetComponentsInChildren<GazeScript>(true);
-		}
-		GameObject portalHolder = GameObject.Find("PortalHolder");
-		PortalScript[] portalObjects = null;
-		if (portalHolder != null) {
-			portalObjects = portalHolder.GetComponentsInChildren<PortalScript>(true);
-		}
-		if (gravityOrbs != null && gravityOrbs.Length > 0) {
-			orbs = new GameObject[gravityOrbs.Length];
-			for (int i = 0; i < gravityOrbs.Length; i++) {
-				orbs[i] = gravityOrbs[i].gameObject;
-			}
-		}
-		if (gazeObjects != null && gazeObjects.Length > 0) {
-			gazes = new GameObject[gazeObjects.Length];
-			for (int i = 0; i < gazeObjects.Length; i++) {
-				gazes[i] = gazeObjects[i].gameObject;
-			}
-		}
-		if (portalObjects != null && portalObjects.Length > 0) {
-			portals = new GameObject[portalObjects.Length];
-			for (int i = 0; i < portalObjects.Length; i++) {
-				portals[i] = portalObjects[i].gameObject;
-			}
-		}
-	}
-    public void Attack(){
-		Vector3 pos = transform.position;
-		pos += transform.right;
-		pos += transform.up;
-		Collider2D colInfo = Physics2D.OverlapCircle(pos, 5f,playerLayer);
-		if (colInfo != null){
-			Health health=colInfo.GetComponent<Health>();//bad place probably
-            if(health!=null)
-                health.takeDamage(damage,-1,4,2);
-		}
-	}
-	public void LookAtPlayer(){
-		Vector3 flipped = transform.localScale;
-		flipped.z *= -1f;
-
-		if (transform.position.x > player.position.x && isFlipped)
-		{
-			transform.localScale = flipped;
-			transform.Rotate(0f, 180f, 0f);
-			isFlipped = false;
-		}
-		else if (transform.position.x < player.position.x && !isFlipped)
-		{
-			transform.localScale = flipped;
-			transform.Rotate(0f, 180f, 0f);
-			isFlipped = true;
-		}
-	}
 	private void teleport() {
-        Vector3 newBossPos = player.position + Vector3.right * teleportDistance;
-        transform.position = newBossPos;
+        transform.position = tpPoint.transform.position;
+		changeBodyType(1);
+	}
+	private void changeBodyType(int act){
+		if(act==1){
+			transform.GetComponent<Rigidbody2D>().isKinematic=true;
+		}
+		else{
+			transform.GetComponent<Rigidbody2D>().isKinematic=false;
+		}
+		
 	}
 	private int findOrb() {
         for (int i = 0; i < orbs.Length; i++){
@@ -121,6 +77,15 @@ public class Boss : MonoBehaviour
 	private void activateGazeObject() {
 		gazes[findGaze()].SetActive(true);
 	}
+	IEnumerator activateGaze2() {
+		int randomIndex = Random.Range(0,3);
+		for (int i = 0; i < gazes.Length; i++){
+			gazes[randomIndex].SetActive(true);
+			randomIndex++;
+			randomIndex%=gazes.Length;
+			yield return new WaitForSeconds(1f);
+		}	
+	}
 	private int findPortal() {
         int randomIndex = 1;
 		do{
@@ -132,16 +97,61 @@ public class Boss : MonoBehaviour
 	private void activatePortal() {
 		portals[findPortal()].SetActive(true);
 	}
+	IEnumerator activatePortal1(){
+		for (int i = 0; i < portals.Length; i++)
+		{
+			portals[i].SetActive(true);
+			yield return new  WaitForSeconds(0.2f);
+		}
+	}
+	private int findSpiritPortal(){
+		for(int i = 0; i < spiritPortals.Length; i++) {
+			if(!spiritPortals[i].activeInHierarchy)
+				return i;
+		}
+		return 0;
+	}
+	private void activateSpiritPortal() {
+		spiritPortals[findSpiritPortal()].SetActive(true);
+	}
 	IEnumerator activateShield(){
-		health.canTakeDamage=false;
+		health.shielded=true;
 		yield return new WaitForSeconds(1f);
-		health.canTakeDamage=true;
+		health.shielded=false;
 	}
 	private void shieldHit () {
 		anim.ResetTrigger("CreateShield");
 		anim.SetTrigger("ShieldHit");
-		health.canTakeDamage=true;
+		health.shielded=false;
 		sendGravityBall(leftFirePoint);
 		sendGravityBall(rightFirePoint);
+	}
+	IEnumerator summonExplosion(){
+		GameObject vortexGround = Instantiate(Resources.Load<GameObject>("CFX3_Vortex_Ground"), transform.position, Quaternion.identity);
+		yield return new WaitForSeconds(attackCd);
+		Instantiate(Resources.Load<GameObject>("CFXR Hit D 3D (Yellow)"), transform.position, Quaternion.identity);
+		Collider2D player=Physics2D.OverlapCircle(transform.position, orbRadius, playerLayer);
+        if (player != null) {
+            PlayerHealth playerHealth = player.GetComponent<PlayerHealth>();
+            if (playerHealth != null) {
+                playerHealth.TakeDamage(damage,(transform.position.x>player.transform.position.x?-1:1));
+            }
+        }
+		Destroy(vortexGround);
+	}
+	private void darken(){
+		DarkWave circleEffect = Instantiate(Resources.Load<DarkWave>("DarkWaveEffect"), transform.position, Quaternion.identity);
+		circleEffect.StartEffect();
+		GameManager.updateTorch(false);
+		Transform darken = player.Find("Darken");
+        if (darken != null){
+            darken.gameObject.SetActive(true);
+        }
+	}
+	public void animTrigger(string trigger) {
+		anim.SetTrigger(trigger);
+	}
+	private void summonSpell() {
+		p2Spell.SetActive(true);
 	}
 }

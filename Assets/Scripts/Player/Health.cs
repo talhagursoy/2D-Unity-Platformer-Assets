@@ -7,7 +7,6 @@ public class Health : MonoBehaviour
     [SerializeField]
     private float maxHealth;
     public float currentHealth{get; private set;}
-    private Vector2 currentVelocity = Vector2.zero;
     private Rigidbody2D body;
     private SpriteRenderer[] childRenderers;
     private Animator anim;
@@ -36,7 +35,6 @@ public class Health : MonoBehaviour
             return;
         } 
         currentHealth-=_damage;
-        print(_damage);
         if(currentHealth<=0){
             anim.SetTrigger("Hurt");
             Instantiate(deathVfx,transform.position,transform.rotation);

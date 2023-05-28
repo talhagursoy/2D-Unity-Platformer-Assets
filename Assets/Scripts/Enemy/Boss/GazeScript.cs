@@ -13,7 +13,8 @@ public class GazeScript : MonoBehaviour{
     private void activateGaze() {
         DarkWave circleEffect = Instantiate(circlePrefab, transform.position, Quaternion.identity);
         circleEffect.StartEffect();
-        if((player.localScale.x*transform.localScale.x)<0){
+        Vector2 eyeToPlayer = player.transform.position - transform.position;
+        if ((eyeToPlayer.x > 0f && player.transform.localScale.x > 0f) || (eyeToPlayer.x < 0f && player.transform.localScale.x < 0f)){
             pm.StartCoroutine("darkenPlayer");
         }
     }

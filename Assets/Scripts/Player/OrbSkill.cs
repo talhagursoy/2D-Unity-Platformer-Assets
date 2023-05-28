@@ -7,7 +7,8 @@ public class OrbSkill : Ability{
     private GameObject Orb;
     [SerializeField]
     private Transform attackPoint;
-
+    [SerializeField]
+    private AudioClip shurikenSound;
     public override void Activate(){
         if (AbilityActivated != null)
         {
@@ -19,5 +20,6 @@ public class OrbSkill : Ability{
         Orb.transform.position = new Vector2(attackPoint.position.x - 0.3f, attackPoint.position.y + 1f);
         Orb.GetComponent<Orb>().direction = -Mathf.Sign(transform.localScale.x);
         Orb.SetActive(true);
+        SoundManager.instance.playSound(shurikenSound);
     }
 }

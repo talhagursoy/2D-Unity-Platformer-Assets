@@ -28,7 +28,7 @@ public class Patrol : MonoBehaviour {
     protected Animator anim;
     [SerializeField]
     protected Transform firePoint;
-    protected Health health;
+    protected IDamagable damagable;
     protected Collider2D hit;
     protected virtual void Awake() {
         moveRight = true;
@@ -109,7 +109,7 @@ public class Patrol : MonoBehaviour {
         }
         hit = Physics2D.OverlapCircle(firePoint.transform.position, rangedDistance, playerLayer);
         if (hit != null) {
-            health = hit.GetComponent<Health>();
+            damagable = hit.GetComponent<IDamagable>();
             return true;
         }
         else {

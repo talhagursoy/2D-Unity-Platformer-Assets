@@ -15,10 +15,6 @@ public class Orb : MonoBehaviour
     private float radius;
     [SerializeField]
     private float damage;
-    [SerializeField]
-    private float enemyXPush;
-    [SerializeField]
-    private float enemyYPush;
     public float direction;
     [SerializeField]
     private float pushForce;
@@ -42,7 +38,7 @@ public class Orb : MonoBehaviour
         Collider2D[] enemies = Physics2D.OverlapCircleAll(collisionPoint, radius, enemyLayer);
         foreach(Collider2D enemy in enemies) {
             float direction = enemy.transform.position.x - transform.position.x;
-            enemy.GetComponent<Health>().takeDamage(damage,Mathf.Sign(direction), enemyXPush, enemyYPush);
+            enemy.GetComponent<BaseHealth>().TakeDamage(damage,Mathf.Sign(direction));
         }
         gameObject.SetActive(false);
     }

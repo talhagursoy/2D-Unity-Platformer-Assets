@@ -11,8 +11,11 @@ public class MainMenuManager : MonoBehaviour
     private GameObject startMenu;
     [SerializeField]
     private GameObject levelMenu;
+    private void OnEnable() {
+        EnableButtonsUpToCurrentLevel();
+    }
     public void startGame() {
-        SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex+1);
+        SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex+PlayerPrefs.GetInt("SavedLevel", 1));
     }
     public void quit() {
         Application.Quit();
@@ -28,5 +31,17 @@ public class MainMenuManager : MonoBehaviour
     public void showLevelMenu() {
         startMenu.SetActive(false);
         levelMenu.SetActive(true);
+    }
+    private void EnableButtonsUpToCurrentLevel(){
+        Component panel=transform.Find("LevelMenu");
+        int savedLevel = PlayerPrefs.GetInt("SavedLevel", 1);
+        if (panel != null){
+            for (int i = 1; i <= savedLevel; i++){
+                string buttonName = "Level" + i;
+                Transform button = panel.transform.Find(buttonName);
+                if (button != null)
+                    button.GetComponent<Button>().interactable=true;
+            }
+        }
     }
 }

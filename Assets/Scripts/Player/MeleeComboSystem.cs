@@ -22,10 +22,6 @@ public class MeleeComboSystem : MonoBehaviour
     [SerializeField]
     private Transform attackPoint;
     [SerializeField]
-    private float enemyXPush;
-    [SerializeField]
-    private float enemyYPush;
-    [SerializeField]
     private float meleeDamage;
     [SerializeField]
     private LayerMask enemyLayer;
@@ -33,7 +29,12 @@ public class MeleeComboSystem : MonoBehaviour
     [SerializeField]
     private float vfxOffset;
     public bool canAttack;
-    
+    [SerializeField]
+    private AudioClip attack1;
+    [SerializeField]
+    private AudioClip attack2;
+    [SerializeField]
+    private AudioClip attack3;
     private void Awake() {
         anim=GetComponent<Animator>();
         currentCombo=0;
@@ -56,14 +57,17 @@ public class MeleeComboSystem : MonoBehaviour
         switch (currentCombo) {
             case 0:
                 firstAttackFx.SetActive(true);
+                SoundManager.instance.playSound(attack1);
                 currentRadius=radius;
                 break;
             case 1:
                 secondAttackFx.SetActive(true);
+                SoundManager.instance.playSound(attack2);
                 currentRadius=radius*2;
                 break;
             case 2:
                 thirdAttackFx.SetActive(true);
+                SoundManager.instance.playSound(attack3);
                 currentRadius=radius*3;
                 break;
             default :
@@ -72,9 +76,15 @@ public class MeleeComboSystem : MonoBehaviour
         currentCombo++;
         if(currentCombo==maxCombo)
             currentCombo=0;
-        Collider2D[] enemies=Physics2D.OverlapCircleAll(attackPoint.position,currentRadius,enemyLayer);
-        foreach(Collider2D enemy in enemies){
-            enemy.GetComponent<Health>().takeDamage(meleeDamage,-Mathf.Sign(transform.localScale.x),enemyXPush,enemyYPush);
+        Collider2D[] objects = Physics2D.OverlapCircleAll(attackPoint.position, currentRadius);
+        foreach (Collider2D obj in objects) {
+            if (obj.gameObject == gameObject) {
+                continue;
+            }
+            IDamagable damagableObj = obj.GetComponent<IDamagable>();
+            if (damagableObj != null) {
+                damagableObj.TakeDamage(meleeDamage, -Mathf.Sign(transform.localScale.x));
+            }
         }
     }
     public void resetAtk() {

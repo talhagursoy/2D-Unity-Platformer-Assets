@@ -4,14 +4,14 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 
-public class AbilityManager : MonoBehaviour
-{
+public class AbilityManager : MonoBehaviour{
     public Ability[] abilities;
     private float[] cooldownTimers;
     public TextMeshProUGUI[] cooldownTexts;
-
-    private void Start()
-    {
+    private void OnEnable() {
+        abilities=GameObject.Find("Player").GetComponents<Ability>();
+    }
+    private void Start(){
         cooldownTimers = new float[abilities.Length];
         for (int i = 0; i < abilities.Length; i++)
         {
@@ -19,7 +19,6 @@ public class AbilityManager : MonoBehaviour
             cooldownTexts[i].text = "";
         }
     }
-
     private void Update()
     {
         for (int i = 0; i < abilities.Length; i++)
@@ -45,6 +44,10 @@ public class AbilityManager : MonoBehaviour
         else if (Input.GetKeyDown(KeyCode.Alpha2))
         {
             ActivateAbility(1);
+        }
+        else if (Input.GetKeyDown(KeyCode.Alpha3))
+        {
+            ActivateAbility(2);
         }
     }
 

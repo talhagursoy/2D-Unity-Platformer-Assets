@@ -35,7 +35,6 @@ public class DoorScript : MonoBehaviour
         switch(count){   
             case 2:
                 sr.sprite = portal2;
-                print("set to 2");
                 break;
             case 3:
                 sr.sprite = portal3;
@@ -53,7 +52,7 @@ public class DoorScript : MonoBehaviour
     }
     private void OnTriggerEnter2D(Collider2D other) {
         if(other.CompareTag("Player")){
-            GameManager.loadScene();
+            GameManager.loadNextScene();
         }
     }
 }

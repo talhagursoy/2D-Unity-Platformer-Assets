@@ -38,6 +38,7 @@ public class Strike : Ability{
             // Update the UI to show the player's current position
             yield return null;
         }
+        transform.GetComponent<Rigidbody2D>().velocity=Vector2.zero;
         isActive = false;
         strikeCollider.enabled=false;
         transform.GetComponent<PlayerMovement>().canMove = true;

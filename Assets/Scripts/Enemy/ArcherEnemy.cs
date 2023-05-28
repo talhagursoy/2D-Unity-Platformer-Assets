@@ -43,8 +43,8 @@ public class ArcherEnemy : Patrol {
     }
     private void damagePlayer() {
         if(inSight(attackDistance))
-            if(health!=null)
-                health.takeDamage(damage,-Mathf.Sign(transform.localScale.x),playerXPush,playerYPush);
+            if(damagable!=null)
+                damagable.TakeDamage(damage,-Mathf.Sign(transform.localScale.x));
     }
     private int findArrow() {
         for (int i = 0; i < arrows.Length; i++){
@@ -58,16 +58,5 @@ public class ArcherEnemy : Patrol {
         arrows[findArrow()].transform.position=firePoint.position;
         arrows[findArrow()].GetComponent<ArrowScript>().activateArrow(-Mathf.Sign(transform.localScale.x),playerTransform.position);
         attackTimer=0;
-    }
-     private void OnDrawGizmos() {
-        Vector3 dir;
-        if(moveRight){
-            dir=Vector3.right;
-        }
-        else{
-            dir=Vector3.left;
-        }    
-        Gizmos.color=Color.red;
-        Gizmos.DrawWireCube(collid.bounds.center+dir,collid.bounds.size);
     }
 }

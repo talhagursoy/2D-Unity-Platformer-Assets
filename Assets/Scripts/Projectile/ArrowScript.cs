@@ -25,7 +25,7 @@ public class ArrowScript : MonoBehaviour
     }
     private void OnTriggerEnter2D(Collider2D other) {
         if(other.tag=="Player"){
-            other.GetComponent<Health>().takeDamage(damage,transform.rotation.z>0.5? -1:1,playerXPush,playerYPush);
+            other.GetComponent<PlayerHealth>().TakeDamage(damage,transform.rotation.z>0.5? -1:1);
         }
         print("triggered");
         //play anim if want to

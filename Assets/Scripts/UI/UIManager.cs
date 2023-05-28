@@ -13,6 +13,7 @@ public class UIManager : MonoBehaviour
         deathMenu.SetActive(false);
         pauseScreen.SetActive(false);
         Time.timeScale=1;
+        //DontDestroyOnLoad(gameObject);
     }
     private void Update() {
         if(Input.GetKeyDown(KeyCode.Escape)){

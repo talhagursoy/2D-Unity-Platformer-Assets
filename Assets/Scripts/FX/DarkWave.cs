@@ -4,9 +4,9 @@ using UnityEngine;
 
 public class DarkWave : MonoBehaviour
 {
-    public float maxRadius = 10f;
+    public float maxRadius = 2f;
     public float growSpeed = 1f;
-    public float fadeSpeed = 1f;
+    public float fadeSpeed = 0.5f;
     private bool isGrowing = false;
     private SpriteRenderer spriteRenderer;
     private void Awake(){

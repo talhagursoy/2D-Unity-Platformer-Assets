@@ -2,7 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class Pendulum : MonoBehaviour
+public class Pendulum : Traps
 {
     private Rigidbody2D body;
     [SerializeField]

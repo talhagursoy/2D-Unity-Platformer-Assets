@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEngine.UI;
 
 public class GameManager : MonoBehaviour
 {
@@ -10,6 +11,10 @@ public class GameManager : MonoBehaviour
     DoorScript currentDoor;	
     string sceneName;
     Transform bossSpawnPoint;
+    Image image;
+    Torch[] torches;
+    float countTorch;
+    GameObject boss;
     void Awake(){
 		if (current!=null &&current!=this)
 		{
@@ -18,17 +23,28 @@ public class GameManager : MonoBehaviour
 		}
 		current = this;
         chests=new List<ChestScript>();
-		DontDestroyOnLoad(gameObject);//decide if wanna keep around the game manager or reset
+		DontDestroyOnLoad(gameObject);
     }
     private void Start() {
         sceneName=SceneManager.GetActiveScene().name;
+    }
+    private void OnEnable(){
+        SceneManager.sceneLoaded += OnSceneLoaded;
+    }
+    private void OnSceneLoaded(Scene scene, LoadSceneMode mode){
+        torches=GameObject.FindObjectsOfType<Torch>();
+        current.countTorch=0;
+        GameObject keyBarObject = GameObject.Find("KeyBar");
+        if (keyBarObject != null){
+            image = keyBarObject.GetComponent<Image>();
+            current.image.fillAmount=1f;
+        }     
     }
     public static void registerChest(ChestScript chest) {
         if(current==null)
             return;
         if(!current.chests.Contains(chest)){
             current.chests.Add(chest);
-            //update ui to show correct number of chest
         }    
     }
     public static void registerDoor(DoorScript door){
@@ -47,25 +63,37 @@ public class GameManager : MonoBehaviour
         if(!current.chests.Contains(chest))
             return;
         current.chests.Remove(chest);
+        current.image.fillAmount=(float)current.chests.Count/3f;
         if(current.chests.Count==0){
             current.currentDoor.openDoor();
         }          
     }
-    public static void loadScene(){
-        SceneManager.LoadScene(nextScene(current.sceneName));
-    }
-    public static int nextScene(string sceneName) {
-        int levelNumber;
-        int.TryParse(sceneName.Substring(5), out levelNumber);//if condition maybe to ensure if parse goes wrong
-        return levelNumber+1;
+    public static void loadNextScene(){
+        int savedLevel = PlayerPrefs.GetInt("SavedLevel", 1);
+        int activeLevel = SceneManager.GetActiveScene().buildIndex;
+        if (activeLevel >= savedLevel){
+            PlayerPrefs.SetInt("SavedLevel", savedLevel + 1);
+        }
+        SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex+1);
     }
     public static IEnumerator summonBoss1(){
+        current.boss=GameObject.FindObjectOfType<Boss>(true).gameObject;
         GameObject bossVFX = Instantiate(Resources.Load<GameObject>("CFX2_BatsCloud"), current.bossSpawnPoint.transform.position, Quaternion.identity);
-        bossVFX.transform.SetParent(current.bossSpawnPoint.transform);
-        GameObject boss = Instantiate(Resources.Load<GameObject>("WitchBoss"), current.bossSpawnPoint.transform.position, Quaternion.identity);
-        boss.SetActive(false);
+        current.boss.SetActive(false);
         float vfxDuration = bossVFX.GetComponent<ParticleSystem>().main.duration;
         yield return new WaitForSeconds(vfxDuration);
-        boss.SetActive(true);
+        current.boss.SetActive(true);
+    }
+    public static void updateTorch(bool act) {
+        foreach(var torch in current.torches) {
+			torch.active(act);
+		}
+    }
+    public static void torchCount(){
+        current.countTorch++;
+        if(current.countTorch==current.torches.Length){
+            current.countTorch=0;
+            current.boss.GetComponent<Boss>().animTrigger("LoseWings");
+        }
     }
 }

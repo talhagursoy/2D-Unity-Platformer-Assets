@@ -11,10 +11,6 @@ public class MeleeEnemy : Patrol {
     [SerializeField]
     private float playerYPush;
     public bool canAttack;
-    [SerializeField]
-    private GameObject[] arrows;
-    
-
     protected override void Awake() {
         base.Awake();
         attackTimer = attackCd;
@@ -33,7 +29,7 @@ public class MeleeEnemy : Patrol {
     }
     private void damagePlayer() {
         if(inSight(attackDistance))
-            if(health!=null)
-                health.takeDamage(damage,-Mathf.Sign(transform.localScale.x),playerXPush,playerYPush);
+            if(damagable!=null)
+                damagable.TakeDamage(damage,-Mathf.Sign(transform.localScale.x));
     }
 }

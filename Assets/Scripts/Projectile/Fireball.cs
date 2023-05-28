@@ -21,15 +21,15 @@ public class Fireball : MonoBehaviour{
     void Update(){
         duration+=Time.deltaTime;
         if(duration>=maxDuration){
-            //gameObject.SetActive(false);
+            Destroy(gameObject);
         }
     }
     private void OnTriggerEnter2D(Collider2D other) {
         Collider2D player=Physics2D.OverlapCircle(transform.position, radius, playerLayer);
         if (player != null) {
-            Health playerHealth = player.GetComponent<Health>();
+            PlayerHealth playerHealth = player.GetComponent<PlayerHealth>();
             if (playerHealth != null) {
-                playerHealth.takeDamage(damage, Mathf.Sign(1f), 0, 0);
+                playerHealth.TakeDamage(damage, 0);
             }
         }
         Instantiate(explosionVFX,transform.position,transform.rotation);

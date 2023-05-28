@@ -15,14 +15,12 @@ public class PlayerMovement : MonoBehaviour
     private float jumpForce;
     [SerializeField]
     private Transform playerTransform;
-    private BoxCollider2D playerCollider;
+    private CapsuleCollider2D playerCollider;
     private float horizontalInput;
     [SerializeField]
     LayerMask wallLayer;
     [SerializeField]
     private float footOffset=0.7f;
-    //[SerializeField]
-    //private float reachOffset=0.6f;
     [SerializeField]
     private float grabDistance=0.1f;
     [SerializeField]
@@ -40,18 +38,25 @@ public class PlayerMovement : MonoBehaviour
     private bool onLadder;
     [SerializeField]
     private float ladderMoveSpeed;
-    [SerializeField]
-    private float fallSpeed;
     private bool castingAbility;
     private MeleeComboSystem meleeComboSystem;
     [SerializeField]
     private float wallSlideSpeed;
     private bool jumping;
+    [SerializeField]
+    private AudioClip jumpSound;
+    private PlayerHealth health;
+    [SerializeField]
+    private float fallVelocity=-20f;
+    private float currentVelocity;
+    private float maxVelocity=-50f;
     private void Awake() {
+        //DontDestroyOnLoad(gameObject);
         anim=GetComponent<Animator>();
         body=GetComponent<Rigidbody2D>();
         sr=GetComponent<SpriteRenderer>();
-        playerCollider=GetComponent<BoxCollider2D>();
+        health=GetComponent<PlayerHealth>();
+        playerCollider=GetComponent<CapsuleCollider2D>();
         castingAbility=false;
         meleeComboSystem=GetComponent<MeleeComboSystem>();
     }
@@ -73,6 +78,15 @@ public class PlayerMovement : MonoBehaviour
         if(!castingAbility)
             anim.SetBool("Jump",!onGround());
         meleeComboSystem.canAttack=onGround();
+        currentVelocity=body.velocity.y;
+        if (currentVelocity < fallVelocity && onGround()){
+            float fallSpeed = Mathf.Abs(currentVelocity);
+            fallDamage(fallSpeed);
+        }
+        else if(currentVelocity < maxVelocity){
+            fallDamage(100f);
+        }
+            
     }
     private void Start(){
         abilityManager = GameObject.Find("AbilityManager").GetComponent<AbilityManager>();
@@ -92,6 +106,9 @@ public class PlayerMovement : MonoBehaviour
         ladderManager=FindObjectOfType<Ladder>();
         if(ladderManager)
             ladderManager.onCollision+=activateLadder;
+    }
+    private void fallDamage(float damage){
+        health.TakeDamage(damage,0);
     }
     private void activateLadder(bool isOnLadder) {
         if(isOnLadder){
@@ -140,6 +157,7 @@ public class PlayerMovement : MonoBehaviour
             }  
         else
             body.velocity=new Vector2(body.velocity.x,jumpForce);  
+        SoundManager.instance.playSound(jumpSound);
         Invoke("resetjump",0.2f);
     }
     private bool onGround(){
@@ -155,6 +173,7 @@ public class PlayerMovement : MonoBehaviour
             onWall=true;
         }
         return hit;
+
     }
     private void wallSlide() {
         if(isWalled()&&!onGround()&&horizontalInput==0){
@@ -185,14 +204,12 @@ public class PlayerMovement : MonoBehaviour
         jumping=false;
     }
     public IEnumerator darkenPlayer(){
-        print("coro called");
         sr.color=Color.gray;
         canMove=false;
         body.velocity=Vector2.zero;
         anim.SetBool("Walk",false);
         meleeComboSystem.canAttack=false;
         yield return new WaitForSeconds(2f);
-        print("canmove true");
         sr.color=Color.white;
         canMove=true;
         meleeComboSystem.canAttack=true;
